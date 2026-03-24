@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Magic Blocks PFP Generator</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
+<style>
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: 'Inter', sans-serif;
+    background: radial-gradient(circle at top, #1a1026, #050507);
+    color: white;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  h1 {
+    margin: 20px 0 10px;
+    font-size: 22px;
+    font-weight: 700;
+    background: linear-gradient(90deg, #d6a8ff, #8a4dff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .container {
+    width: 100%;
+    max-width: 420px;
+    padding: 12px;
+  }
+
+  .card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    backdrop-filter: blur(12px);
+    border-radius: 20px;
+    padding: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  }
+
+  .canvas-wrapper {
+    position: relative;
+    width: 100%;
+    border-radius: 16px;
+    overflow: hidden;
+    background: #0d0d12;
+  }
+
+  canvas {
+    width: 100%;
+    display: block;
+    touch-action: none;
+  }
+
+  input[type="file"] {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 12px;
+    background: #111;
+    border: 1px solid #222;
+    color: #aaa;
+  }
+
+  .section-title {
+    font-size: 12px;
+    color: #aaa;
+    margin: 10px 0 6px;
+  }
+
+  .hats {
+    display: flex;
+    gap: 10px;
+  }
+
+  .hats img {
+    width: 70px;
+    border-radius: 12px;
+    background: #111;
+    padding: 6px;
+    border: 2px solid transparent;
+    transition: all 0.2s ease;
+  }
+
+  .hats img.active {
+    border-color: #8a4dff;
+    transform: scale(1.05);
+    box-shadow: 0 0 15px rgba(138,77,255,0.6);
+  }
+
+  input[type="range"] {
+    width: 100%;
+    margin-top: 5px;
+  }
+
+  .buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 12px;
+  }
+
+  button {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    border-radius: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.2s;
+  }
+
+  .primary {
+    background: linear-gradient(135deg, #8a4dff, #c084ff);
+  }
+
+  .secondary {
+    background: #151520;
+    border: 1px solid #2a2a3a;
+  }
+
+  button:active {
+    transform: scale(0.97);
+  }
+
+</style>
+</head>
+<body>
+
+<h1>Magic Blocks Wizard 🪄</h1>
+
+<div class="container">
+  <div class="card">
+
+    <input type="file" id="upload" accept="image/*">
+
+    <div class="canvas-wrapper">
+      <canvas id="canvas"></canvas>
+    </div>
+
+    <div class="section-title">Choose Hat</div>
+    <div class="hats">
+      <img src="assets/hat1.png" onclick="selectHat(0)">
+      <img src="assets/hat2.png" onclick="selectHat(1)">
+      <img src="assets/hat3.png" onclick="selectHat(2)">
+    </div>
+
+    <div class="section-title">Resize</div>
+    <input type="range" min="50" max="600" value="150" id="sizeSlider">
+
+    <div class="buttons">
+      <button class="primary" onclick="downloadImage()">Download</button>
+      <button class="secondary" onclick="shareToX()">Share</button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+
+let baseImage = new Image();
+let hatImages = [new Image(), new Image(), new Image()];
+
+hatImages[0].src = "assets/hat1.png";
+hatImages[1].src = "assets/hat2.png";
+hatImages[2].src = "assets/hat3.png";
+
+let selectedHat = null;
+let hatX = 100;
+let hatY = 100;
+let hatSize = 150;
+let dragging = false;
+
+// Upload
+upload.onchange = e => {
+  const reader = new FileReader();
+  reader.onload = ev => baseImage.src = ev.target.result;
+  reader.readAsDataURL(e.target.files[0]);
+};
+
+baseImage.onload = () => {
+  canvas.width = baseImage.width;
+  canvas.height = baseImage.height;
+  hatX = canvas.width / 2 - 75;
+  hatY = canvas.height / 4;
+  draw();
+};
+
+function selectHat(i) {
+  selectedHat = hatImages[i];
+  document.querySelectorAll('.hats img').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.hats img')[i].classList.add('active');
+  draw();
+}
+
+sizeSlider.oninput = e => {
+  const prevSize = hatSize;
+  hatSize = parseInt(e.target.value);
+
+  // keep center consistent when resizing
+  hatX = hatX - (hatSize - prevSize) / 2;
+  hatY = hatY - (hatSize - prevSize) / 2;
+
+  draw();
+};
+
+function draw() {
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.drawImage(baseImage,0,0);
+
+  if (selectedHat) {
+    ctx.shadowColor = "rgba(138,77,255,0.7)";
+    ctx.shadowBlur = 20;
+    ctx.drawImage(selectedHat, hatX, hatY, hatSize, hatSize);
+    ctx.shadowBlur = 0;
+  }
+}
+
+// ===== FIXED DRAG SYSTEM (TOUCH + MOUSE) =====
+
+function getPointerPos(e) {
+  const rect = canvas.getBoundingClientRect();
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+  const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+  return {
+    x: (clientX - rect.left) * (canvas.width / rect.width),
+    y: (clientY - rect.top) * (canvas.height / rect.height)
+  };
+}
+
+function isInsideHat(x, y) {
+  return (
+    selectedHat &&
+    x >= hatX &&
+    x <= hatX + hatSize &&
+    y >= hatY &&
+    y <= hatY + hatSize
+  );
+}
+
+function startDrag(e) {
+  e.preventDefault();
+  const pos = getPointerPos(e);
+  if (isInsideHat(pos.x, pos.y)) {
+    dragging = true;
+  }
+}
+
+function moveDrag(e) {
+  if (!dragging) return;
+  e.preventDefault();
+
+  const pos = getPointerPos(e);
+  hatX = pos.x - hatSize / 2;
+  hatY = pos.y - hatSize / 2;
+  draw();
+}
+
+function endDrag() {
+  dragging = false;
+}
+
+// Mouse
+canvas.addEventListener("mousedown", startDrag);
+canvas.addEventListener("mousemove", moveDrag);
+canvas.addEventListener("mouseup", endDrag);
+canvas.addEventListener("mouseleave", endDrag);
+
+// Touch
+canvas.addEventListener("touchstart", startDrag, { passive: false });
+canvas.addEventListener("touchmove", moveDrag, { passive: false });
+canvas.addEventListener("touchend", endDrag);
+
+// ===== ACTIONS =====
+
+function downloadImage() {
+  const link = document.createElement("a");
+  link.download = "pfp.png";
+  link.href = canvas.toDataURL();
+  link.click();
+}
+
+function shareToX() {
+  const text = encodeURIComponent("Just made my Magic Blocks wizard PFP 🪄");
+  window.open(`https://twitter.com/intent/tweet?text=${text}`);
+}
+</script>
+
+</body>
+</html>
